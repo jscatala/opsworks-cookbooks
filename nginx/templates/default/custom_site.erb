@@ -1,0 +1,59 @@
+upstream <%= @site[:proxy_name] %> {
+  server <%= @site[:proxy_host] %>:<%= @site[:proxy_port] %>;
+}
+
+<% if @site.key? :alternative_domains %>
+server {
+    server_name <%= @site[:alternative_domains].join(" ") %>;
+    rewrite ^ https://<%= @site[:domains].first %>$request_uri? permanent;
+}
+<% end %>
+
+server {
+  listen 80;
+  charset utf-8;
+  server_name <%= @site[:domains].join(" ") %>;
+  access_log  <%= node[:nginx][:log_dir] %>/<%= @site[:domains].first %>.access.log specialLog;
+
+  root /var/www/html;
+  client_body_in_file_only clean;
+
+  keepalive_timeout <%= node[:nginx][:keepalive_timeout] %>;
+  client_body_buffer_size <%= node[:nginx][:client_body_buffer_size] %>;
+  client_max_body_size <%= node[:nginx][:client_max_body_size] %>;
+
+  <% @site.fetch(:health_checks, []).each do |location| %>
+  location <%= location %> {
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Scheme $scheme;
+    proxy_set_header Host $http_host;
+    proxy_redirect off;
+    proxy_next_upstream error;
+    proxy_pass http://<%= @site[:proxy_name] %>;
+    break;
+  }
+  <% end %>
+
+  # Proxy everything else to the upstream server, enforcing HTTPS.
+  location / {
+      proxy_pass_header Idempotency-Key;
+      proxy_set_header X-Scheme $scheme;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header Host $http_host;
+      proxy_redirect off;
+      proxy_next_upstream error;
+      proxy_read_timeout <%= @site[:proxy_read_timeout] %>;
+
+      if ($http_x_forwarded_proto != "https") {
+          rewrite ^(.*)$ https://$http_host$1 permanent;
+      }
+
+      proxy_pass http://<%= @site[:proxy_name] %>;
+      add_header Strict-Transport-Security "max-age=31536000";
+  }
+
+  # what to serve if upstream is not available or crashes
+  error_page 500 502 503 504 /media/50x.html;
+}

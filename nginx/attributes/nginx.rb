@@ -35,17 +35,21 @@ else
   Chef::Log.error "Cannot configure nginx, platform unknown"
 end
 
-default[:nginx][:log_format] = {}
+default[:nginx][:log_format] = {
+  :specialLog => '\'$remote_addr - $remote_user [$time_local] "$request" '\
+                 '$status $body_bytes_sent "$http_referer" "$http_user_agent" - '\
+                 '$request_time X-Forwarded-For=$http_x_forwarded_for Host=$host\''
+  }
 
 # increase if you accept large uploads
-default[:nginx][:client_max_body_size] = "4m"
+default[:nginx][:client_max_body_size] = "50m"
 
 default[:nginx][:gzip] = "on"
 default[:nginx][:gzip_static] = "on"
 default[:nginx][:gzip_vary] = "on"
 default[:nginx][:gzip_disable] = "MSIE [1-6].(?!.*SV1)"
 default[:nginx][:gzip_http_version] = "1.0"
-default[:nginx][:gzip_comp_level] = "2"
+default[:nginx][:gzip_comp_level] = "5"
 default[:nginx][:gzip_proxied] = "any"
 default[:nginx][:gzip_types] = ["application/x-javascript",
                                 "application/xhtml+xml",
@@ -60,11 +64,13 @@ default[:nginx][:gzip_types] = ["application/x-javascript",
 default[:nginx][:keepalive] = "on"
 default[:nginx][:keepalive_timeout] = 65
 
+default[:nginx][:client_body_buffer_size] = "32K"
+
 default[:nginx][:worker_processes] = 10
 default[:nginx][:worker_connections] = 1024
 default[:nginx][:server_names_hash_bucket_size] = 64
 
-default[:nginx][:proxy_read_timeout] = 60
-default[:nginx][:proxy_send_timeout] = 60
+default[:nginx][:proxy_read_timeout] = 120
+default[:nginx][:proxy_send_timeout] = 120
 
 include_attribute "nginx::customize"

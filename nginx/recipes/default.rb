@@ -60,6 +60,20 @@ template "nginx.conf" do
   mode 0644
 end
 
+directory "/var/www/nginx-default" do
+  mode 0755
+  owner node[:nginx][:user]
+  action :create
+end
+
+template "index.html" do
+  path "/var/www/nginx-default/index.html"
+  source "index.html.erb"
+  owner "root"
+  group "root"
+  mode 0644
+end
+
 template "#{node[:nginx][:dir]}/sites-available/default" do
   source "default-site.erb"
   owner "root"
