@@ -1,0 +1,25 @@
+$ModLoad imfile
+$InputFilePollInterval 10
+$PrivDropToGroup adm
+$WorkDirectory /var/spool/rsyslog
+
+<% node[:sites].each do |site| %>
+<% ['access', 'error'].each do |category| %>
+$InputFileName /var/log/nginx/<%= site[:domains].first %>.<%= category %>.log
+$InputFileTag <%= site[:domains].first %>-nginx-<%= category %>:
+$InputFileStateFile <%= site[:domains].first %>-stat-nginx-<%= category %>
+$InputFileSeverity info
+$InputFilePersistStateInterval 20000
+$InputRunFileMonitor
+<% end %>
+<% end %>
+
+#Add a tag for nginx events
+$template LogglyFormatNginx,"<%%pri%>%protocol-version% %timestamp:::date-rfc3339% %HOSTNAME% %app-name% %procid% %msgid% [<%= node[:rsyslog][:loggly_token]%>@41058 tag=\"nginx\"] %msg%\n"
+
+<% node[:sites].each do |site| %>
+<% ['access', 'error'].each do |category| %>
+if $programname == '<%= site[:domains].first %>-nginx-<%= category %>' then @@logs-01.loggly.com:514;LogglyFormatNginx
+if $programname == '<%= site[:domains].first %>-nginx-<%= category %>' then ~
+<% end %>
+<% end %>
