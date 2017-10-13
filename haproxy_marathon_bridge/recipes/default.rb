@@ -3,7 +3,7 @@
 # Recipe:: default
 #
 
-apt_resource 'python-pip' do
+apt_package 'python-pip' do
 end
 
 bash 'requests' do
