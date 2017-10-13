@@ -13,6 +13,9 @@ directory '/opt/cloudmonitor' do
 end
 
 
+apt_package 'python-pip' do
+end
+
 bash 'virtualenv and cloudwatchmon' do
     code <<-EOH
     pip install --upgrade pip
