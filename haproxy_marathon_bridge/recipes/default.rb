@@ -3,10 +3,15 @@
 # Recipe:: default
 #
 
-include_recipe "python"
-include_recipe "python::pip"
+apt_resource 'python-pip' do
+end
 
-python_pip "requests"
+bash 'requests' do
+    code <<-EOH
+    pip install --upgrade pip
+    pip install requests
+    EOH
+end
 
 template '/opt/haproxy_marathon_bridge' do
   source 'haproxy_marathon_bridge.py'
